@@ -17,6 +17,8 @@ from contextlib import closing
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, Router, F
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, FSInputFile
 from aiogram.fsm.context import FSMContext
@@ -187,7 +189,7 @@ def can_proceed(user_id: int) -> bool:
 # -------------------------
 def initialize_bot():
     """Initialize bot, dispatcher, and router"""
-    bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
     router = Router()
