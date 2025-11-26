@@ -179,6 +179,16 @@ def menu_kb():
         resize_keyboard=True
     )
 
+def bonus_kb():
+    """Return bonus claim keyboard with Done button"""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="✅ Done")],
+            [KeyboardButton(text="📊 My Status"), KeyboardButton(text="ℹ️ Help")]
+        ],
+        resize_keyboard=True
+    )
+
 def can_proceed(user_id: int) -> bool:
     """Rate limiting check"""
     now = datetime.utcnow().timestamp()
@@ -247,11 +257,11 @@ def register_handlers(router: Router, bot: Bot):
         txt += line()
         txt += f"🔗 {REF_LINK}\n"
         txt += divider()
-        txt += f"<b>Step 2:</b> Type <code>Done</code> when ready"
+        txt += f"<b>Step 2:</b> Tap <b>Done</b> when ready"
         
-        await message.answer(txt, disable_web_page_preview=True)
+        await message.answer(txt, reply_markup=bonus_kb(), disable_web_page_preview=True)
     
-    @router.message(F.text.lower() == "done")
+    @router.message(F.text == "✅ Done")
     async def done_requirements(message: Message, state: FSMContext):
         mark_signed_up(message.from_user.id)
         
@@ -259,7 +269,7 @@ def register_handlers(router: Router, bot: Bot):
         txt += f"Now send your <b>platform username</b>\n"
         txt += f"so we can verify your account."
         
-        await message.answer(txt, disable_web_page_preview=True)
+        await message.answer(txt, reply_markup=menu_kb(), disable_web_page_preview=True)
         await state.set_state(BonusFlow.awaiting_platform_username)
     
     @router.message(F.text == "📊 My Status")
