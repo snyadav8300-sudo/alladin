@@ -159,11 +159,15 @@ def set_status(telegram_id: int, status: str) -> bool:
 # -------------------------
 def divider():
     """Return a visual divider"""
-    return "\n" + "─" * 30
+    return "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+def line():
+    """Return a thin line"""
+    return "\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
 
 def header(text: str) -> str:
     """Return a formatted header"""
-    return f"{divider()}\n<b>{text}</b>{divider()}"
+    return f"\n{'━' * 30}\n   {text}\n{'━' * 30}\n"
 
 def menu_kb():
     """Return main menu keyboard"""
@@ -210,36 +214,40 @@ def register_handlers(router: Router, bot: Bot):
     async def start_cmd(message: Message):
         user = get_or_create_user(message.from_user.id, message.from_user.username)
         
-        welcome = header(f"Welcome to {BRAND_NAME}!") + "\n\n"
-        welcome += f"🎁 <b>Get Your $42 Bonus!</b>\n\n"
+        welcome = f"🎁 <b>Welcome to {BRAND_NAME}!</b>\n"
+        welcome += divider()
+        welcome += f"💵 <b>Get Your $42 Bonus</b>\n\n"
         welcome += f"<b>How it works:</b>\n"
-        welcome += f"1️⃣ Sign up using our referral code\n"
-        welcome += f"2️⃣ Deposit $42 and place a wager\n"
-        welcome += f"3️⃣ Submit your username for verification\n"
-        welcome += f"4️⃣ Get your $42 bonus approved!\n\n"
-        welcome += f"<b>Your Referral Code:</b> <code>{REF_CODE}</code>\n"
-        welcome += f"<b>Signup Link:</b> {REF_LINK}\n\n"
-        welcome += f"Click 'Claim Bonus' when ready!" + divider()
+        welcome += f"  1. Sign up with our code\n"
+        welcome += f"  2. Deposit $42 + wager\n"
+        welcome += f"  3. Submit your username\n"
+        welcome += f"  4. Get approved!\n"
+        welcome += line()
+        welcome += f"📋 <b>Code:</b> <code>{REF_CODE}</code>\n"
+        welcome += f"🔗 <b>Link:</b> {REF_LINK}\n"
+        welcome += divider()
+        welcome += f"👇 Tap <b>Claim Bonus</b> to start"
         
         await message.answer(welcome, reply_markup=menu_kb(), disable_web_page_preview=True)
     
     @router.message(F.text == "💰 Claim Bonus")
     async def claim_bonus_btn(message: Message, state: FSMContext):
         if not can_proceed(message.from_user.id):
-            await message.answer("⏱ Please wait a few seconds before trying again.", disable_web_page_preview=True)
+            await message.answer("⏱ Please wait a moment...", disable_web_page_preview=True)
             return
         
         user = get_or_create_user(message.from_user.id, message.from_user.username)
         
-        txt = header("Claim Your $42 Bonus") + "\n\n"
-        txt += f"<b>Step 1: Sign Up & Complete Requirements</b>\n\n"
-        txt += f"1️⃣ Click the link below to sign up\n"
-        txt += f"2️⃣ Use referral code: <code>{REF_CODE}</code>\n"
-        txt += f"3️⃣ Deposit $42\n"
-        txt += f"4️⃣ Place a wager\n\n"
-        txt += f"<b>Signup Link:</b> {REF_LINK}\n\n"
-        txt += f"<b>Step 2: Submit Your Username</b>\n"
-        txt += f"After completing the requirements, type 'Done' to continue." + divider()
+        txt = f"💰 <b>Claim Your $42 Bonus</b>\n"
+        txt += divider()
+        txt += f"<b>Step 1:</b> Complete Requirements\n\n"
+        txt += f"  ▸ Sign up using the link below\n"
+        txt += f"  ▸ Use code: <code>{REF_CODE}</code>\n"
+        txt += f"  ▸ Deposit $42 and place a wager\n"
+        txt += line()
+        txt += f"🔗 {REF_LINK}\n"
+        txt += divider()
+        txt += f"<b>Step 2:</b> Type <code>Done</code> when ready"
         
         await message.answer(txt, disable_web_page_preview=True)
     
@@ -247,9 +255,9 @@ def register_handlers(router: Router, bot: Bot):
     async def done_requirements(message: Message, state: FSMContext):
         mark_signed_up(message.from_user.id)
         
-        txt = "✅ <b>Great!</b>\n\n"
-        txt += "Now please send your <b>platform username</b> so we can verify your account.\n\n"
-        txt += "Just type your username and send it."
+        txt = f"✅ <b>Great!</b>\n\n"
+        txt += f"Now send your <b>platform username</b>\n"
+        txt += f"so we can verify your account."
         
         await message.answer(txt, disable_web_page_preview=True)
         await state.set_state(BonusFlow.awaiting_platform_username)
@@ -258,35 +266,36 @@ def register_handlers(router: Router, bot: Bot):
     async def status_btn(message: Message):
         user = get_or_create_user(message.from_user.id, message.from_user.username)
         
-        txt = header("Your Status") + "\n\n"
-        txt += f"<b>Telegram ID:</b> <code>{user['telegram_id']}</code>\n"
-        txt += f"<b>Referral Code:</b> <code>{user['referral_agent']}</code>\n"
-        txt += f"<b>Platform Username:</b> {user['platform_username'] or 'Not submitted'}\n"
-        txt += f"<b>Status:</b> {user['status']}\n\n"
+        status_icon = {"Pending": "⏳", "Verified": "✅", "Rejected": "❌"}.get(user['status'], "❓")
+        
+        txt = f"📊 <b>Your Status</b>\n"
+        txt += divider()
+        txt += f"<b>ID:</b> <code>{user['telegram_id']}</code>\n"
+        txt += f"<b>Username:</b> {user['platform_username'] or '—'}\n"
+        txt += f"<b>Status:</b> {status_icon} {user['status']}\n"
+        txt += divider()
         
         if user['status'] == 'Pending':
-            txt += "⏳ Your submission is being reviewed. We'll notify you once verified!"
+            txt += "Your submission is being reviewed."
         elif user['status'] == 'Verified':
-            txt += "✅ Your bonus has been approved!"
+            txt += "Your bonus has been approved! 🎉"
         elif user['status'] == 'Rejected':
-            txt += "❌ Your submission was rejected. Please contact support for details."
-        
-        txt += divider()
+            txt += "Contact support for details."
         
         await message.answer(txt, reply_markup=menu_kb(), disable_web_page_preview=True)
     
     @router.message(F.text == "ℹ️ Help")
     async def help_btn(message: Message):
-        txt = header("Help & Information") + "\n\n"
-        txt += f"<b>How to claim your $42 bonus:</b>\n\n"
-        txt += f"1️⃣ Sign up using our link\n"
-        txt += f"2️⃣ Use code: <code>{REF_CODE}</code>\n"
-        txt += f"3️⃣ Deposit $42 and wager\n"
-        txt += f"4️⃣ Submit your username\n"
-        txt += f"5️⃣ Wait for verification (24-48 hrs)\n\n"
-        txt += f"<b>Need assistance?</b>\n"
-        txt += f"Contact support if you have questions about your submission."
+        txt = f"ℹ️ <b>Help</b>\n"
         txt += divider()
+        txt += f"<b>How to claim your bonus:</b>\n\n"
+        txt += f"  1. Sign up → {REF_LINK}\n"
+        txt += f"  2. Use code: <code>{REF_CODE}</code>\n"
+        txt += f"  3. Deposit $42 + wager\n"
+        txt += f"  4. Submit username\n"
+        txt += f"  5. Wait 24-48 hrs\n"
+        txt += divider()
+        txt += f"Questions? Contact support."
         
         await message.answer(txt, reply_markup=menu_kb(), disable_web_page_preview=True)
     
@@ -302,14 +311,14 @@ def register_handlers(router: Router, bot: Bot):
         
         user = get_or_create_user(message.from_user.id, message.from_user.username)
         
-        # Prepare admin notification
-        summary = f"🆕 <b>New Bonus Submission</b>\n\n"
-        summary += f"<b>Telegram ID:</b> <code>{user['telegram_id']}</code>\n"
-        summary += f"<b>Username:</b> @{user['tg_username'] or 'N/A'}\n"
-        summary += f"<b>Referral Code:</b> <code>{user['referral_agent']}</code>\n"
-        summary += f"<b>Platform Username:</b> <code>{platform_username}</code>\n"
-        summary += f"<b>Status:</b> {user['status']}\n\n"
-        summary += f"Use /setstatus {user['telegram_id']} Verified to approve"
+        # Prepare simplified admin notification
+        tg_handle = f"@{user['tg_username']}" if user['tg_username'] else "—"
+        
+        summary = f"🆕 <b>New Submission</b>\n"
+        summary += f"┌ User: {tg_handle}\n"
+        summary += f"├ Platform: <code>{platform_username}</code>\n"
+        summary += f"└ ID: <code>{user['telegram_id']}</code>\n\n"
+        summary += f"<code>/setstatus {user['telegram_id']} Verified</code>"
         
         # Try to send to admin channel
         forwarded_ok = False
@@ -320,29 +329,14 @@ def register_handlers(router: Router, bot: Bot):
         except Exception:
             forwarded_ok = False
 
-        if forwarded_ok:
-            await message.answer(
-                divider() +
-                "\n<b>🎉 Submission Complete! ✅</b>\n\n"
-                "Thank you! We'll verify your details within 24-48 hours.\n\n"
-                "<b>Verification includes:</b>\n"
-                "• Account creation with our code\n"
-                "• $42 deposit and wager\n"
-                "• New user status\n\n"
-                "You'll receive a confirmation message when your bonus is approved." +
-                divider(),
-                reply_markup=menu_kb(),
-                disable_web_page_preview=True
-            )
-        else:
-            await message.answer(
-                "✅ <b>Submission Received!</b>\n\n"
-                "Your details have been saved. Our team will review them shortly.\n\n"
-                "<b>Note:</b> We'll verify your account meets all requirements.",
-                reply_markup=menu_kb(),
-                disable_web_page_preview=True
-            )
-
+        # User confirmation message
+        confirm_txt = f"🎉 <b>Submitted!</b>\n"
+        confirm_txt += divider()
+        confirm_txt += f"Username: <code>{platform_username}</code>\n\n"
+        confirm_txt += f"We'll verify within 24-48 hours.\n"
+        confirm_txt += f"You'll be notified when approved."
+        
+        await message.answer(confirm_txt, reply_markup=menu_kb(), disable_web_page_preview=True)
         await state.clear()
 
     # -------------------------
